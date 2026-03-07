@@ -33,7 +33,7 @@ def crawling_naver_real_estate():
         # 1. 지역 내 클러스터(lgeo) 조회
         cluster_url = f"https://m.land.naver.com/cluster/clusterList?view=atcl&cortarNo={cortar_no}&rletTpCd={rlet_tp}&tradTpCd={trad_tp_cd}&z=12&lat=37.550979&lon=126.849534"
         try:
-            res = session.get(cluster_url)
+            res = session.get(cluster_url, timeout=10)
             print(f"[{rlet_tp}] 클러스터 API 상태코드: {res.status_code}")
             if res.status_code != 200:
                 print(f"[{rlet_tp}] 클러스터 목록 조회 실패 (StatusCode: {res.status_code})")
@@ -58,9 +58,9 @@ def crawling_naver_real_estate():
             while True:
                 list_url = f"https://m.land.naver.com/cluster/ajax/articleList?itemId={lgeo}&lgeo={lgeo}&rletTpCd={rlet_tp}&tradTpCd={trad_tp_cd}&z=12&lat=37.550979&lon=126.849534&page={page}"
                 try:
-                    res_list = session.get(list_url)
+                    res_list = session.get(list_url, timeout=10)
                     if page == 1:
-                        print(f"[{rlet_tp}] 클러스터 {lgeo} 목록 API 상태코드: {res_list.status_code}")
+                        print(f"  - 클러스터 {lgeo} {page}페이지 요청 (현재 누적: {len(all_articles)}건)")
                     if res_list.status_code != 200:
                         print(f"  -> 리다이렉트 여부: {res_list.is_redirect}, 최종 URL: {res_list.url}")
                         break
