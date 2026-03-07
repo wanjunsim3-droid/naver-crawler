@@ -10,6 +10,9 @@ on:
 jobs:
   crawl:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
 
     steps:
       - name: Checkout repository
@@ -28,7 +31,17 @@ jobs:
       - name: Run Crawler
         run: python naver_crawler.py
 
-      - name: Upload Excel file
+      - name: Commit and Push Results
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add *.xlsx
+          git commit -m "Auto-update crawl results: $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Excel file as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: crawl-results
