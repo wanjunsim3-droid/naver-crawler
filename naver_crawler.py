@@ -43,6 +43,9 @@ def crawling_naver_real_estate():
             # print(f"[{rlet_tp}] 클러스터 응답 데이터: {str(data)[:200]}") # Debug print
             clusters = data.get("data", {}).get("ARTICLE", [])
             print(f"[{rlet_tp}] 찾은 클러스터 개수: {len(clusters)}")
+            
+            if not clusters:
+                print(f"[{rlet_tp}] 응답 데이터 요약: {str(data)[:500]}")
         except Exception as e:
             print(f"[{rlet_tp}] 클러스터 목록 파싱 오류: {e}")
             continue
