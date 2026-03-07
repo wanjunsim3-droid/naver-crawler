@@ -13,7 +13,7 @@ def crawling_naver_real_estate():
     trad_tp_cd = "B1:B2:E1" # 전세, 월세, 분양권
     
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
         "Referer": "https://m.land.naver.com/",
@@ -27,16 +27,27 @@ def crawling_naver_real_estate():
     session = requests.Session()
     session.headers.update(headers)
 
+    def get_with_retry(url, max_retries=3):
+        for i in range(max_retries):
+            try:
+                res = session.get(url, timeout=30)
+                if res.status_code == 200:
+                    return res
+                print(f"  - [Retry {i+1}/{max_retries}] Status {res.status_code}")
+            except Exception as e:
+                print(f"  - [Retry {i+1}/{max_retries}] Error: {e}")
+            time.sleep(2)
+        return None
+
     all_articles = []
 
     for rlet_tp in rlet_tp_cds:
         # 1. 지역 내 클러스터(lgeo) 조회
         cluster_url = f"https://m.land.naver.com/cluster/clusterList?view=atcl&cortarNo={cortar_no}&rletTpCd={rlet_tp}&tradTpCd={trad_tp_cd}&z=12&lat=37.550979&lon=126.849534"
         try:
-            res = session.get(cluster_url, timeout=10)
-            print(f"[{rlet_tp}] 클러스터 API 상태코드: {res.status_code}")
-            if res.status_code != 200:
-                print(f"[{rlet_tp}] 클러스터 목록 조회 실패 (StatusCode: {res.status_code})")
+            res = get_with_retry(cluster_url)
+            if not res:
+                print(f"[{rlet_tp}] 클러스터 목록 조회 최종 실패")
                 continue
             
             data = res.json()
@@ -61,7 +72,10 @@ def crawling_naver_real_estate():
             while True:
                 list_url = f"https://m.land.naver.com/cluster/ajax/articleList?itemId={lgeo}&lgeo={lgeo}&rletTpCd={rlet_tp}&tradTpCd={trad_tp_cd}&z=12&lat=37.550979&lon=126.849534&page={page}"
                 try:
-                    res_list = session.get(list_url, timeout=10)
+                    res_list = get_with_retry(list_url)
+                    if not res_list:
+                        break
+                        
                     if page == 1:
                         print(f"  - 클러스터 {lgeo} {page}페이지 요청 (현재 누적: {len(all_articles)}건)")
                     if res_list.status_code != 200:
