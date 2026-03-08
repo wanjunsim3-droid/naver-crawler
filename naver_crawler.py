@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 from datetime import datetime
 import time
+import random
 
 def crawling_naver_real_estate():
     print("네이버 부동산 지식산업센터 (강서구) 매물 수집을 시작합니다...")
@@ -12,31 +13,35 @@ def crawling_naver_real_estate():
     rlet_tp_cds = ["K01", "K02", "D01", "D02", "E02"]
     trad_tp_cd = "B1:B2:E1" # 전세, 월세, 분양권
     
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Referer": "https://m.land.naver.com/",
-        "Origin": "https://m.land.naver.com",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
-        "Connection": "keep-alive"
-    }
+    user_agents = [
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"
+    ]
 
     session = requests.Session()
-    session.headers.update(headers)
 
-    def get_with_retry(url, max_retries=3):
+    def get_with_retry(url, max_retries=5):
         for i in range(max_retries):
+            # Rotate User-Agent
+            ua = random.choice(user_agents)
+            session.headers.update({"User-Agent": ua})
+            
             try:
-                res = session.get(url, timeout=30)
+                # Add random initial delay for GitHub runners
+                if i > 0:
+                    wait_time = random.uniform(5, 15) * (i + 1)
+                    print(f"  - [Wait] {wait_time:.1f}초 대기 후 재시도...")
+                    time.sleep(wait_time)
+                
+                res = session.get(url, timeout=45)
                 if res.status_code == 200:
                     return res
                 print(f"  - [Retry {i+1}/{max_retries}] Status {res.status_code}")
             except Exception as e:
                 print(f"  - [Retry {i+1}/{max_retries}] Error: {e}")
-            time.sleep(2)
+                
         return None
 
     all_articles = []
