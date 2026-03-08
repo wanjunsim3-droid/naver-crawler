@@ -14,31 +14,45 @@ def crawling_naver_real_estate():
     trad_tp_cd = "B1:B2:E1" # 전세, 월세, 분양권
     
     user_agents = [
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     ]
-
-    session = requests.Session()
 
     def get_with_retry(url, max_retries=5):
         for i in range(max_retries):
-            # Rotate User-Agent
+            # Fresh session for each major retry attempt to clear any SSL/Conn issues
+            session = requests.Session()
             ua = random.choice(user_agents)
-            session.headers.update({"User-Agent": ua})
+            
+            headers = {
+                "User-Agent": ua,
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Referer": "https://m.land.naver.com/map/1150000000/0/0?center=37.550979,126.849534&z=12",
+                "Origin": "https://m.land.naver.com",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin",
+                "Connection": "keep-alive",
+                "Cache-Control": "no-cache",
+                "Pragma": "no-cache"
+            }
+            session.headers.update(headers)
             
             try:
-                # Add random initial delay for GitHub runners
                 if i > 0:
-                    wait_time = random.uniform(5, 15) * (i + 1)
-                    print(f"  - [Wait] {wait_time:.1f}초 대기 후 재시도...")
+                    wait_time = random.uniform(10, 20) * (i + 1)
+                    print(f"  - [Wait] {wait_time:.1f}초 대기 후 재시도... (Attempt {i+1}/{max_retries})")
                     time.sleep(wait_time)
                 
-                res = session.get(url, timeout=45)
+                res = session.get(url, timeout=60)
                 if res.status_code == 200:
                     return res
                 print(f"  - [Retry {i+1}/{max_retries}] Status {res.status_code}")
+                if res.status_code == 403: # Blocked
+                    print("  - [Warning] 403 Forbidden - IP Throttled by Naver")
             except Exception as e:
                 print(f"  - [Retry {i+1}/{max_retries}] Error: {e}")
                 
