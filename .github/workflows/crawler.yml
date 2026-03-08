@@ -35,9 +35,13 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add *.xlsx
-          git commit -m "Auto-update crawl results: $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-          git push
+          if ls *.xlsx 1> /dev/null 2>&1; then
+            git add *.xlsx
+            git commit -m "Auto-update crawl results: $(date +'%Y-%m-%d %H:%M:%S')"
+            git push
+          else
+            echo "No Excel files found to commit."
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
